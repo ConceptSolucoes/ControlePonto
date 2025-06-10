@@ -72,25 +72,31 @@
     console.warn("Erro ao obter localização: ", error.message);
   });
 
-  document.getElementById("formPonto").addEventListener("submit", function(e) {
-    e.preventDefault();
+ document.getElementById("formPonto").addEventListener("submit", function(e) {
+  e.preventDefault();
 
-    const form = new FormData(e.target);
-    const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
+  const formData = new FormData(e.target);
+  const params = new URLSearchParams();
+  for (const [key, value] of formData.entries()) {
+    params.append(key, value);
+  }
 
-    fetch(url, {
-      method: "POST",
-      body: form,
-    })
-    .then(res => res.text())
-    .then(data => {
-      document.getElementById("mensagem").innerText = data;
-    })
-    .catch(error => {
-      console.error("Erro ao enviar:", error);
-      document.getElementById("mensagem").innerText = "Erro ao registrar ponto. Verifique a conexão ou permissões.";
-    });
+  const url = "COLE AQUI O NOVO LINK DO WEB APP";
+
+  fetch(url, {
+    method: "POST",
+    body: params,
+  })
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById("mensagem").innerText = data;
+  })
+  .catch(error => {
+    console.error("Erro ao enviar:", error);
+    document.getElementById("mensagem").innerText = "Erro ao registrar ponto. Verifique a conexão ou permissões.";
   });
+});
+
 </script>
 
 </body>
