@@ -1,89 +1,58 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Registro de Ponto</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2em; background-color: #f5f5f5; }
-    form { background: #fff; padding: 2em; border-radius: 10px; max-width: 400px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    input, select, button { width: 100%; padding: 0.75em; margin: 0.5em 0; border: 1px solid #ccc; border-radius: 6px; }
-    button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-    button:hover { background-color: #45a049; }
-    #mensagem { text-align: center; margin-top: 1em; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <h1 style="text-align:center;">Controle de Ponto</h1>
+<script>
+  // Obter localização
+  navigator.geolocation.getCurrentPosition(position => {
+    document.getElementById('latitude').value = position.coords.latitude;
+    document.getElementById('longitude').value = position.coords.longitude;
+  }, error => {
+    console.warn("Localização não disponível:", error);
+    document.getElementById('mensagem').textContent = 
+      "Localização não disponível. O ponto será registrado sem geolocalização.";
+    document.getElementById('mensagem').style.color = "orange";
+  });
 
-  <form id="formPonto">
-    <input type="text" name="nome" placeholder="Nome do colaborador" required>
-    <input type="text" name="setor" placeholder="Setor" required>
-    <select name="tipo" required>
-      <option value="">Selecione o tipo de ponto</option>
-      <option value="Entrada">Entrada</option>
-      <option value="Saída">Saída</option>
-      <option value="Ida para almoço">Ida para almoço</option>
-      <option value="Volta do almoço">Volta do almoço</option>
-    </select>
-    <input type="text" name="obs" placeholder="Observação (opcional)">
-    <input type="hidden" name="latitude" id="latitude">
-    <input type="hidden" name="longitude" id="longitude">
-    <button type="submit">Registrar Ponto</button>
-  </form>
-
-  <p id="mensagem"></p>
-
-  <script>
-    // Obter localização
-    navigator.geolocation.getCurrentPosition(function(position) {
-      document.getElementById('latitude').value = position.coords.latitude;
-      document.getElementById('longitude').value = position.coords.longitude;
-    }, function(error) {
-      console.warn("Erro ao obter localização: ", error.message);
-      document.getElementById('mensagem').innerText = "Atenção: Localização não obtida. O ponto será registrado sem geolocalização.";
-      document.getElementById('mensagem').style.color = "orange";
-    });
-
-    document.getElementById("formPonto").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      
-      const form = e.target;
+  // Envio do formulário
+  document.getElementById("formPonto").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const form = e.target;
+    const messageEl = document.getElementById("mensagem");
+    messageEl.textContent = "Enviando dados...";
+    messageEl.style.color = "blue";
+    
+    try {
+      // Converter FormData para objeto
       const formData = new FormData(form);
-      const mensagem = document.getElementById("mensagem");
-      mensagem.innerText = "Enviando dados...";
-      mensagem.style.color = "black";
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
       
-      // Converter FormData para objeto JSON
-      const dados = {};
-      formData.forEach((value, key) => dados[key] = value);
+      // URL do Web App (substitua pela sua)
+      const webAppUrl = "https://script.google.com/macros/s/AKfycb.../exec";
       
-      // Substitua pela URL do seu Web App
-      const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
+      const response = await fetch(webAppUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        redirect: "follow"
+      });
       
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(dados)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          mensagem.innerText = result.message;
-          mensagem.style.color = "green";
-          form.reset();
-        } else {
-          throw new Error(result.message);
-        }
-      } catch (error) {
-        console.error("Erro ao enviar:", error);
-        mensagem.innerText = "Erro: " + error.message;
-        mensagem.style.color = "red";
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        messageEl.textContent = result.message;
+        messageEl.style.color = "green";
+        form.reset();
+      } else {
+        throw new Error(result.message);
       }
-    });
-  </script>
-</body>
-</html>
+    } catch (error) {
+      console.error("Erro:", error);
+      messageEl.textContent = `Erro: ${error.message}`;
+      messageEl.style.color = "red";
+      
+      // Sugestão para o usuário
+      setTimeout(() => {
+        messageEl.textContent += " Tente novamente ou entre em contato com o RH.";
+      }, 2000);
+    }
+  });
+</script>
