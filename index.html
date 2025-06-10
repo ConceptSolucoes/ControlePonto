@@ -1,106 +1,76 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Ponto Concept</title>
 </head>
 <body>
   <h2>Ponto Concept</h2>
+  <label>Nome do Colaborador:<br>
+    <input type="text" id="nome">
+  </label><br><br>
 
-  <form id="pontoForm">
-    <label>Nome do Colaborador:<br />
-      <input type="text" name="nome" required />
-    </label><br/><br/>
+  <label>Setor:<br>
+    <input type="text" id="setor">
+  </label><br><br>
 
-    <label>Setor:<br />
-      <input type="text" name="setor" required />
-    </label><br/><br/>
+  <label>Tipo de Batida:<br>
+    <select id="tipo">
+      <option value="Entrada">Entrada</option>
+      <option value="Saída">Saída</option>
+    </select>
+  </label><br><br>
 
-    <label>Tipo de Batida:<br />
-      <select name="tipo" required>
-        <option value="">Selecione</option>
-        <option value="Entrada">Entrada</option>
-        <option value="Almoço">Almoço</option>
-        <option value="Volta Almoço">Volta Almoço</option>
-        <option value="Saída">Saída</option>
-      </select>
-    </label><br/><br/>
+  <label>Foto (use a câmera):<br>
+    <input type="file" id="foto" accept="image/*" capture="environment">
+  </label><br><br>
 
-    <label>Foto (use a câmera):<br/>
-      <input type="file" accept="image/*" capture="environment" id="fotoInput" required />
-    </label><br/><br/>
-
-    <img id="fotoPreview" style="max-width:320px; margin-top:10px; display:none;" />
-
-    <br/>
-    <button type="submit">Enviar Ponto</button>
-  </form>
+  <button onclick="enviarPonto()">Enviar Ponto</button>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec';
-    const fotoInput = document.getElementById('fotoInput');
-    const fotoPreview = document.getElementById('fotoPreview');
-    let fotoBase64 = '';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec';
 
-    fotoInput.addEventListener('change', function () {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          fotoBase64 = e.target.result;
-          fotoPreview.src = fotoBase64;
-          fotoPreview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+    function enviarPonto() {
+      const nome = document.getElementById('nome').value;
+      const setor = document.getElementById('setor').value;
+      const tipo = document.getElementById('tipo').value;
+      const fotoInput = document.getElementById('foto');
+
+      if (!fotoInput.files.length) {
+        alert("Por favor, selecione uma foto.");
+        return;
       }
-    });
 
-    function enviarDados(latitude, longitude) {
-      const form = document.getElementById('pontoForm');
-      const formData = new FormData(form);
+      const reader = new FileReader();
+      reader.onload = function () {
+        const base64Foto = reader.result.split(',')[1];
 
-      const data = {
-        nome: formData.get('nome'),
-        setor: formData.get('setor'),
-        tipo: formData.get('tipo'),
-        latitude: latitude,
-        longitude: longitude,
-        foto: fotoBase64
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const data = {
+            nome: nome,
+            setor: setor,
+            tipo: tipo,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            foto: base64Foto
+          };
+
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+          .then(response => alert("Ponto enviado com sucesso!"))
+          .catch(error => alert("Erro ao enviar ponto: " + error.message));
+        }, function () {
+          alert("Erro ao obter localização.");
+        });
       };
 
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-        .then(() => alert('Ponto enviado com sucesso!'))
-        .catch(() => alert('Erro ao enviar ponto'));
+      reader.readAsDataURL(fotoInput.files[0]);
     }
-
-    document.getElementById('pontoForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      if (!fotoBase64) {
-        alert('Por favor, tire a foto antes de enviar.');
-        return;
-      }
-
-      if (!navigator.geolocation) {
-        alert('Geolocalização não suportada pelo navegador.');
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          enviarDados(pos.coords.latitude, pos.coords.longitude);
-        },
-        () => alert('Não foi possível obter a localização')
-      );
-    });
   </script>
 </body>
 </html>
