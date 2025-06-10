@@ -2,75 +2,98 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Ponto Concept</title>
+  <title>Registro de Ponto - Controle de Ponto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2em;
+      background-color: #f5f5f5;
+    }
+    form {
+      background: #fff;
+      padding: 2em;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.75em;
+      margin: 0.5em 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #mensagem {
+      text-align: center;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h2>Ponto Concept</h2>
-  <label>Nome do Colaborador:<br>
-    <input type="text" id="nome">
-  </label><br><br>
+  <h1 style="text-align:center;">Controle de Ponto</h1>
 
-  <label>Setor:<br>
-    <input type="text" id="setor">
-  </label><br><br>
+  <form id="formPonto">
+    <input type="text" name="nome" placeholder="Nome do colaborador" required>
+    <input type="text" name="setor" placeholder="Setor" required>
 
-  <label>Tipo de Batida:<br>
-    <select id="tipo">
+    <select name="tipo" required>
+      <option value="">Selecione o tipo de ponto</option>
       <option value="Entrada">Entrada</option>
       <option value="Saída">Saída</option>
+      <option value="Ida para almoço">Ida para almoço</option>
+      <option value="Volta do almoço">Volta do almoço</option>
     </select>
-  </label><br><br>
 
-  <label>Foto (use a câmera):<br>
-    <input type="file" id="foto" accept="image/*" capture="environment">
-  </label><br><br>
+    <input type="text" name="obs" placeholder="Observação (opcional)">
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
 
-  <button onclick="enviarPonto()">Enviar Ponto</button>
+    <button type="submit">Registrar Ponto</button>
+  </form>
+
+  <p id="mensagem"></p>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec';
+    // Captura a geolocalização automaticamente
+    navigator.geolocation.getCurrentPosition(function(position) {
+      document.getElementById('latitude').value = position.coords.latitude;
+      document.getElementById('longitude').value = position.coords.longitude;
+    }, function(error) {
+      console.warn("Erro ao obter localização: ", error.message);
+    });
 
-    function enviarPonto() {
-      const nome = document.getElementById('nome').value;
-      const setor = document.getElementById('setor').value;
-      const tipo = document.getElementById('tipo').value;
-      const fotoInput = document.getElementById('foto');
+    document.getElementById("formPonto").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-      if (!fotoInput.files.length) {
-        alert("Por favor, selecione uma foto.");
-        return;
-      }
+      const form = new FormData(e.target);
+      const params = new URLSearchParams(form);
 
-      const reader = new FileReader();
-      reader.onload = function () {
-        const base64Foto = reader.result.split(',')[1];
+      const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
 
-        navigator.geolocation.getCurrentPosition(function (position) {
-          const data = {
-            nome: nome,
-            setor: setor,
-            tipo: tipo,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            foto: base64Foto
-          };
-
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-          })
-          .then(response => alert("Ponto enviado com sucesso!"))
-          .catch(error => alert("Erro ao enviar ponto: " + error.message));
-        }, function () {
-          alert("Erro ao obter localização.");
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: params,
         });
-      };
 
-      reader.readAsDataURL(fotoInput.files[0]);
-    }
+        const msg = await res.text();
+        document.getElementById("mensagem").innerText = msg;
+      } catch (err) {
+        document.getElementById("mensagem").innerText = "Erro ao registrar ponto.";
+        console.error(err);
+      }
+    });
   </script>
 </body>
 </html>
