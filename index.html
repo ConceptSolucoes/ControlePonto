@@ -1,106 +1,106 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ponto Concept</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ponto Concept</title>
 </head>
 <body>
-<h2>Ponto Concept</h2>
+  <h2>Ponto Concept</h2>
 
-<form id="pontoForm">
-  <label>Nome do Colaborador:<br />
-    <input type="text" name="nome" required />
-  </label><br/><br/>
+  <form id="pontoForm">
+    <label>Nome do Colaborador:<br />
+      <input type="text" name="nome" required />
+    </label><br/><br/>
 
-  <label>Setor:<br />
-    <input type="text" name="setor" required />
-  </label><br/><br/>
+    <label>Setor:<br />
+      <input type="text" name="setor" required />
+    </label><br/><br/>
 
-  <label>Tipo de Batida:<br />
-    <select name="tipo" required>
-      <option value="">Selecione</option>
-      <option value="Entrada">Entrada</option>
-      <option value="Almoço">Almoço</option>
-      <option value="Volta Almoço">Volta Almoço</option>
-      <option value="Saída">Saída</option>
-    </select>
-  </label><br/><br/>
+    <label>Tipo de Batida:<br />
+      <select name="tipo" required>
+        <option value="">Selecione</option>
+        <option value="Entrada">Entrada</option>
+        <option value="Almoço">Almoço</option>
+        <option value="Volta Almoço">Volta Almoço</option>
+        <option value="Saída">Saída</option>
+      </select>
+    </label><br/><br/>
 
-  <label>Foto (use a câmera):<br/>
-    <input type="file" accept="image/*" capture="environment" id="fotoInput" required />
-  </label>
-  <br/><br/>
-  <img id="fotoPreview" style="max-width:320px; margin-top:10px; display:none;" />
+    <label>Foto (use a câmera):<br/>
+      <input type="file" accept="image/*" capture="environment" id="fotoInput" required />
+    </label><br/><br/>
 
-  <br/>
-  <button type="submit">Enviar Ponto</button>
-</form>
+    <img id="fotoPreview" style="max-width:320px; margin-top:10px; display:none;" />
 
-<script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec';
+    <br/>
+    <button type="submit">Enviar Ponto</button>
+  </form>
 
-const fotoInput = document.getElementById('fotoInput');
-const fotoPreview = document.getElementById('fotoPreview');
-let fotoBase64 = '';
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec';
+    const fotoInput = document.getElementById('fotoInput');
+    const fotoPreview = document.getElementById('fotoPreview');
+    let fotoBase64 = '';
 
-fotoInput.addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      fotoBase64 = e.target.result; // base64 da imagem
-      fotoPreview.src = fotoBase64;
-      fotoPreview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
-});
+    fotoInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          fotoBase64 = e.target.result;
+          fotoPreview.src = fotoBase64;
+          fotoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
-function enviarDados(latitude, longitude) {
-  const form = document.getElementById('pontoForm');
-  const formData = new FormData(form);
+    function enviarDados(latitude, longitude) {
+      const form = document.getElementById('pontoForm');
+      const formData = new FormData(form);
 
-  const data = {
-    nome: formData.get('nome'),
-    setor: formData.get('setor'),
-    tipo: formData.get('tipo'),
-    latitude: latitude,
-    longitude: longitude,
-    foto: fotoBase64
-  };
+      const data = {
+        nome: formData.get('nome'),
+        setor: formData.get('setor'),
+        tipo: formData.get('tipo'),
+        latitude: latitude,
+        longitude: longitude,
+        foto: fotoBase64
+      };
 
-  const queryString = new URLSearchParams(data).toString();
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+        .then(() => alert('Ponto enviado com sucesso!'))
+        .catch(() => alert('Erro ao enviar ponto'));
+    }
 
-  fetch(`${SCRIPT_URL}?${queryString}`, {
-    method: 'POST',
-    mode: 'no-cors'
-  })
-  .then(() => alert('Ponto enviado com sucesso!'))
-  .catch(() => alert('Erro ao enviar ponto'));
-}
+    document.getElementById('pontoForm').addEventListener('submit', (e) => {
+      e.preventDefault();
 
-document.getElementById('pontoForm').addEventListener('submit', (e) => {
-  e.preventDefault();
+      if (!fotoBase64) {
+        alert('Por favor, tire a foto antes de enviar.');
+        return;
+      }
 
-  if (!fotoBase64) {
-    alert('Por favor, tire a foto antes de enviar.');
-    return;
-  }
+      if (!navigator.geolocation) {
+        alert('Geolocalização não suportada pelo navegador.');
+        return;
+      }
 
-  if (!navigator.geolocation) {
-    alert('Geolocalização não suportada pelo navegador.');
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      enviarDados(pos.coords.latitude, pos.coords.longitude);
-    },
-    () => alert('Não foi possível obter a localização')
-  );
-});
-</script>
-
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          enviarDados(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => alert('Não foi possível obter a localização')
+      );
+    });
+  </script>
 </body>
 </html>
