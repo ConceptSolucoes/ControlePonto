@@ -65,35 +65,33 @@
   <p id="mensagem"></p>
 
   <script>
-    // Captura a geolocalização automaticamente
-    navigator.geolocation.getCurrentPosition(function(position) {
-      document.getElementById('latitude').value = position.coords.latitude;
-      document.getElementById('longitude').value = position.coords.longitude;
-    }, function(error) {
-      console.warn("Erro ao obter localização: ", error.message);
+  navigator.geolocation.getCurrentPosition(function(position) {
+    document.getElementById('latitude').value = position.coords.latitude;
+    document.getElementById('longitude').value = position.coords.longitude;
+  }, function(error) {
+    console.warn("Erro ao obter localização: ", error.message);
+  });
+
+  document.getElementById("formPonto").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const form = new FormData(e.target);
+    const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
+
+    fetch(url, {
+      method: "POST",
+      body: form,
+    })
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("mensagem").innerText = data;
+    })
+    .catch(error => {
+      console.error("Erro ao enviar:", error);
+      document.getElementById("mensagem").innerText = "Erro ao registrar ponto. Verifique a conexão ou permissões.";
     });
+  });
+</script>
 
-    document.getElementById("formPonto").addEventListener("submit", async function(e) {
-      e.preventDefault();
-
-      const form = new FormData(e.target);
-      const params = new URLSearchParams(form);
-
-      const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
-
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          body: params,
-        });
-
-        const msg = await res.text();
-        document.getElementById("mensagem").innerText = msg;
-      } catch (err) {
-        document.getElementById("mensagem").innerText = "Erro ao registrar ponto.";
-        console.error(err);
-      }
-    });
-  </script>
 </body>
 </html>
