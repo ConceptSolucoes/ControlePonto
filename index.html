@@ -65,39 +65,48 @@
   <p id="mensagem"></p>
 
   <script>
-  navigator.geolocation.getCurrentPosition(function(position) {
-    document.getElementById('latitude').value = position.coords.latitude;
-    document.getElementById('longitude').value = position.coords.longitude;
-  }, function(error) {
-    console.warn("Erro ao obter localização: ", error.message);
-  });
+    // Obter localização
+    navigator.geolocation.getCurrentPosition(function(position) {
+      document.getElementById('latitude').value = position.coords.latitude;
+      document.getElementById('longitude').value = position.coords.longitude;
+    }, function(error) {
+      console.warn("Erro ao obter localização: ", error.message);
+      document.getElementById('mensagem').innerText = "Atenção: Não foi possível obter sua localização. O ponto será registrado sem geolocalização.";
+    });
 
- document.getElementById("formPonto").addEventListener("submit", function(e) {
-  e.preventDefault();
+    document.getElementById("formPonto").addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const form = e.target;
+      const formData = new FormData(form);
+      const mensagem = document.getElementById("mensagem");
+      
+      // Substitua pela URL do seu Web App (deploy como "Executar como: Eu" e "Quem tem acesso: Qualquer um")
+      const url = "https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec";
+      
+      mensagem.innerText = "Enviando dados...";
+      mensagem.style.color = "black";
 
-  const formData = new FormData(e.target);
-  const params = new URLSearchParams();
-  for (const [key, value] of formData.entries()) {
-    params.append(key, value);
-  }
-
-  const url = "COLE AQUI O NOVO LINK DO WEB APP";
-
-  fetch(url, {
-    method: "POST",
-    body: params,
-  })
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById("mensagem").innerText = data;
-  })
-  .catch(error => {
-    console.error("Erro ao enviar:", error);
-    document.getElementById("mensagem").innerText = "Erro ao registrar ponto. Verifique a conexão ou permissões.";
-  });
-});
-
-</script>
-
+      fetch(url, {
+        method: "POST",
+        body: formData,
+        mode: 'no-cors' // Necessário para contornar problemas de CORS
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Erro na rede");
+        return response.text();
+      })
+      .then(text => {
+        mensagem.innerText = text;
+        mensagem.style.color = "green";
+        form.reset(); // Limpa o formulário após sucesso
+      })
+      .catch(error => {
+        console.error("Erro ao enviar:", error);
+        mensagem.innerText = "Erro ao registrar ponto. Verifique sua conexão.";
+        mensagem.style.color = "red";
+      });
+    });
+  </script>
 </body>
 </html>
