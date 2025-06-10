@@ -6,39 +6,103 @@ document.getElementById("formPonto").addEventListener("submit", async (e) => {
     mensagem.textContent = "Processando...";
     mensagem.style.color = "blue";
     
-    // 1. Coletar dados do formulário
+    // 1. Coletar dados do formulário de forma mais robusta
+    const form = e.target;
     const formData = {
-      nome: e.target.nome.value,
-      setor: e.target.setor.value,
-      tipo: e.target.tipo.value,
-      obs: e.target.obs.value,
+      nome: form.nome.value.trim(),
+      setor: form.setor.value.trim(),
+      tipo: form.tipo.value,
+      obs: form.obs.value.trim(),
       latitude: document.getElementById('latitude').value || '0',
-      longitude: document.getElementById('longitude').value || '0'
+      longitude: document.getElementById('longitude').value || '0',
+      timestamp: new Date().toISOString()  // Adiciona timestamp para rastreamento
     };
 
-    // 2. Configurar a requisição
-    const webAppUrl = "SUA_URL_DO_WEB_APP_AQUI"; // Substitua pela sua URL
+    // 2. Configurar a requisição com tratamento melhorado
+    const webAppUrl = "https://script.google.com/macros/s/AKfycb.../exec"; // Substitua pela sua URL real
+    
+    // Opção 1: Usando fetch com tratamento de CORS
     const response = await fetch(webAppUrl, {
       method: 'POST',
-      mode: 'no-cors', // Contorna problemas de CORS
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
       },
-      body: new URLSearchParams(formData).toString()
+      body: new URLSearchParams(formData).toString(),
+      redirect: 'follow'
     });
 
-    // 3. Processar resposta
+    // Verificar se a resposta foi recebida (mesmo em modo no-cors)
+    if (!response.ok && response.type !== 'opaque') {
+      throw new Error(`Erro HTTP: ${response.status}`);
+    }
+
+    // 3. Processar resposta com verificação mais cuidadosa
     const result = await response.text();
-    mensagem.textContent = result.includes('success') ? 
-      '✅ Ponto registrado com sucesso!' : 
-      '⚠️ ' + result;
-    mensagem.style.color = result.includes('success') ? 'green' : 'orange';
+    
+    // Melhor tratamento da resposta
+    if (result.includes('success') || response.ok) {
+      mensagem.textContent = '✅ Ponto registrado com sucesso!';
+      mensagem.style.color = 'green';
+      form.reset(); // Limpa o formulário após sucesso
+      
+      // Atualizar geolocalização para próximo registro
+      navigator.geolocation.getCurrentPosition(position => {
+        document.getElementById('latitude').value = position.coords.latitude;
+        document.getElementById('longitude').value = position.coords.longitude;
+      });
+    } else {
+      throw new Error(result || 'Resposta inválida do servidor');
+    }
     
   } catch (error) {
     console.error('Erro detalhado:', error);
-    mensagem.innerHTML = `❌ Erro ao enviar:<br>
-      <small>${error.message}</small><br>
-      <button onclick="window.location.reload()">Tentar Novamente</button>`;
+    
+    // Mensagem mais amigável para o usuário
+    mensagem.innerHTML = `
+      <strong>❌ Erro ao enviar:</strong><br>
+      <small>${error.message.replace('Failed to fetch', 'Problema de conexão com o servidor')}</small><br>
+      <button onclick="window.location.reload()" style="
+        margin-top: 10px;
+        padding: 5px 10px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+      ">Tentar Novamente</button>
+    `;
     mensagem.style.color = 'red';
+    
+    // Tentativa alternativa usando XHR se fetch falhar
+    if (error.message.includes('Failed to fetch')) {
+      await tryXHRFallback(formData, mensagem);
+    }
   }
 });
+
+// Função fallback usando XMLHttpRequest
+async function tryXHRFallback(data, mensagemEl) {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    const webAppUrl = "https://script.google.com/macros/s/AKfycb.../exec"; // Mesma URL
+    
+    xhr.open('POST', webAppUrl);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        mensagemEl.innerHTML = '✅ Ponto registrado (método alternativo)!';
+        mensagemEl.style.color = 'green';
+      } else {
+        mensagemEl.textContent = `❌ Erro ${xhr.status}: ${xhr.statusText}`;
+      }
+      resolve();
+    };
+    
+    xhr.onerror = () => {
+      mensagemEl.textContent = '❌ Falha na conexão (método alternativo)';
+      resolve();
+    };
+    
+    xhr.send(new URLSearchParams(data).toString());
+  });
+}
