@@ -1,46 +1,44 @@
-document.getElementById("formPonto").addEventListener("submit", async function(e) {
+document.getElementById("formPonto").addEventListener("submit", async (e) => {
   e.preventDefault();
-  
-  const form = e.target;
   const mensagem = document.getElementById("mensagem");
-  mensagem.innerText = "Enviando dados...";
-  mensagem.style.color = "blue";
-
+  
   try {
-    // Converter FormData para objeto
-    const formData = new FormData(form);
-    const data = {};
-    formData.forEach((value, key) => data[key] = value);
+    mensagem.textContent = "Processando...";
+    mensagem.style.color = "blue";
     
-    // URL do Web App - SUBSTITUA pela sua URL real
-    const webAppUrl = "https://script.google.com/macros/s/AKfycb.../exec";
-    
-    // Solução para problemas de CORS
-    const proxyUrl = `https://cors-anywhere.herokuapp.com/${webAppUrl}`;
-    
-    const response = await fetch(proxyUrl, {
-      method: "POST",
+    // 1. Coletar dados do formulário
+    const formData = {
+      nome: e.target.nome.value,
+      setor: e.target.setor.value,
+      tipo: e.target.tipo.value,
+      obs: e.target.obs.value,
+      latitude: document.getElementById('latitude').value || '0',
+      longitude: document.getElementById('longitude').value || '0'
+    };
+
+    // 2. Configurar a requisição
+    const webAppUrl = "SUA_URL_DO_WEB_APP_AQUI"; // Substitua pela sua URL
+    const response = await fetch(webAppUrl, {
+      method: 'POST',
+      mode: 'no-cors', // Contorna problemas de CORS
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "X-Requested-With": "XMLHttpRequest"
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams(data).toString()
+      body: new URLSearchParams(formData).toString()
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
+    // 3. Processar resposta
     const result = await response.text();
-    mensagem.innerText = result;
-    mensagem.style.color = "green";
-    form.reset();
-  } catch (error) {
-    console.error("Erro na requisição:", error);
-    mensagem.innerText = `Erro: ${error.message}`;
-    mensagem.style.color = "red";
+    mensagem.textContent = result.includes('success') ? 
+      '✅ Ponto registrado com sucesso!' : 
+      '⚠️ ' + result;
+    mensagem.style.color = result.includes('success') ? 'green' : 'orange';
     
-    // Sugestões para o usuário
-    setTimeout(() => {
-      mensagem.innerText += "\nTente: 1) Recarregar a página 2) Verificar conexão 3) Contatar suporte";
-    }, 2000);
+  } catch (error) {
+    console.error('Erro detalhado:', error);
+    mensagem.innerHTML = `❌ Erro ao enviar:<br>
+      <small>${error.message}</small><br>
+      <button onclick="window.location.reload()">Tentar Novamente</button>`;
+    mensagem.style.color = 'red';
   }
 });
