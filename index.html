@@ -49,6 +49,7 @@
       display: block;
       margin: 1rem auto;
       max-width: 100%;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -87,12 +88,11 @@
     <label>Foto (ativa a câmera automaticamente):</label>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
-    <button type="button" onclick="tirarFoto()">Capturar Foto</button>
+    <button type="button" onclick="tirarFoto()">Capturar Foto (se quiser atualizar)</button>
 
     <button type="submit">Registrar Ponto</button>
   </form>
 
-  
   <script>
     const form = document.getElementById('pontoForm');
     const video = document.getElementById('video');
@@ -103,6 +103,10 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+          tirarFoto(); // tira a foto automaticamente assim que a câmera estiver pronta
+        };
       } catch (err) {
         alert("Erro ao acessar a câmera: " + err.message);
       }
@@ -118,53 +122,48 @@
 
     iniciarCamera();
 
-   form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  const agora = new Date();
-  document.getElementById('dataAtual').value = agora.toLocaleDateString("pt-BR");
-  document.getElementById('horaAtual').value = agora.toLocaleTimeString("pt-BR");
+      // Atualiza data e hora no formulário
+      const agora = new Date();
+      document.getElementById('dataAtual').value = agora.toLocaleDateString("pt-BR");
+      document.getElementById('horaAtual').value = agora.toLocaleTimeString("pt-BR");
 
-  const localizacao = await new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve(`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`),
-      () => resolve("Localização não disponível")
-    );
-  });
+      // Pega localização
+      const localizacao = await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve(`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`),
+          () => resolve("Localização não disponível")
+        );
+      });
 
-  document.getElementById('localizacao').value = localizacao;
+      document.getElementById('localizacao').value = localizacao;
 
-  // Certifique-se de que a foto foi tirada!
-  if (!fotoInput.value) {
-    alert("Por favor, capture a foto antes de registrar o ponto.");
-    return;
-  }
+      // Verifica se tem foto
+      if (!fotoInput.value) {
+        alert("Por favor, capture a foto antes de registrar o ponto.");
+        return;
+      }
 
-  const dados = new URLSearchParams(new FormData(form)).toString();
+      // Envia dados via POST x-www-form-urlencoded
+      const dados = new URLSearchParams(new FormData(form)).toString();
 
-  try {
-    const resposta = await fetch("https://script.google.com/macros/s/AKfycbwbsWMEjma4lqXK2xx0vEFzKJQDUNDDpAoZKoSU9WQKeKEgUGadwlERNZGdp5Z4ZR8/exec", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: dados
-    });
+      try {
+        const resposta = await fetch("https://script.google.com/macros/s/AKfycbwbsWMEjma4lqXK2xx0vEFzKJQDUNDDpAoZKoSU9WQKeKEgUGadwlERNZGdp5Z4ZR8/exec", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: dados
+        });
 
-    const texto = await resposta.text();
-    alert(texto);
-    form.reset();
-    // Limpa a foto depois do envio para evitar confusão
-    fotoInput.value = '';
-  } catch (err) {
-    alert("Erro ao registrar ponto.");
-    console.error(err);
-  }
-});
-
-
-        console.log("Enviando dados:");
-for (const pair of new FormData(form).entries()) {
-  console.log(pair[0]+ ': ' + pair[1]);
-}
+        const texto = await resposta.text();
+        alert(texto);
+        form.reset();
+        fotoInput.value = '';
+        iniciarCamera(); // reinicia a câmera e tira nova foto
+      } catch (err) {
+        alert("Erro ao registrar ponto.");
+        console.error(err);
       }
     });
   </script>
