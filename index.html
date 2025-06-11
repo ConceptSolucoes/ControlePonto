@@ -167,6 +167,15 @@
         alert("Erro ao registrar ponto.");
         console.error(err);
       }
+
+    async function iniciarCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+  } catch (err) {
+    alert("Erro ao acessar a câmera: " + err.message);
+  }
+} 
     });
   </script>
 
