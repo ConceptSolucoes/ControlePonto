@@ -118,40 +118,48 @@
 
     iniciarCamera();
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+   form.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-      const agora = new Date();
-      document.getElementById('dataAtual').value = agora.toLocaleDateString("pt-BR");
-      document.getElementById('horaAtual').value = agora.toLocaleTimeString("pt-BR");
+  const agora = new Date();
+  document.getElementById('dataAtual').value = agora.toLocaleDateString("pt-BR");
+  document.getElementById('horaAtual').value = agora.toLocaleTimeString("pt-BR");
 
-      const localizacao = await new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          pos => resolve(`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`),
-          () => resolve("Localização não disponível")
-        );
-      });
+  const localizacao = await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve(`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`),
+      () => resolve("Localização não disponível")
+    );
+  });
 
-      document.getElementById('localizacao').value = localizacao;
+  document.getElementById('localizacao').value = localizacao;
 
-      // Aqui a grande mudança: converter FormData para URLSearchParams (form-urlencoded)
-      const dados = new URLSearchParams(new FormData(form)).toString();
+  // Certifique-se de que a foto foi tirada!
+  if (!fotoInput.value) {
+    alert("Por favor, capture a foto antes de registrar o ponto.");
+    return;
+  }
 
-      try {
-        const resposta = await fetch("https://script.google.com/macros/s/AKfycbwbsWMEjma4lqXK2xx0vEFzKJQDUNDDpAoZKoSU9WQKeKEgUGadwlERNZGdp5Z4ZR8/exec", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: dados
-        });
+  const dados = new URLSearchParams(new FormData(form)).toString();
 
-        const texto = await resposta.text();
-        alert(texto);
-        form.reset();
-      } catch (err) {
-        alert("Erro ao registrar ponto.");
-        console.error(err);
+  try {
+    const resposta = await fetch("https://script.google.com/macros/s/AKfycbwbsWMEjma4lqXK2xx0vEFzKJQDUNDDpAoZKoSU9WQKeKEgUGadwlERNZGdp5Z4ZR8/exec", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: dados
+    });
+
+    const texto = await resposta.text();
+    alert(texto);
+    form.reset();
+    // Limpa a foto depois do envio para evitar confusão
+    fotoInput.value = '';
+  } catch (err) {
+    alert("Erro ao registrar ponto.");
+    console.error(err);
+  }
+});
+
 
         console.log("Enviando dados:");
 for (const pair of new FormData(form).entries()) {
