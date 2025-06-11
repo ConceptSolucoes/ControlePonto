@@ -92,81 +92,49 @@
     <button type="submit">Registrar Ponto</button>
   </form>
 
-  <script>
-    const form = document.getElementById('pontoForm');
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const dataInput = document.getElementById('dataAtual');
-    const horaInput = document.getElementById('horaAtual');
-    const localizacaoInput = document.getElementById('localizacao');
-    const fotoInput = document.getElementById('fotoBase64');
+ <script>
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    // Atualiza data/hora
-    function atualizarDataHora() {
+    try {
+      // Atualiza data/hora
       const agora = new Date();
-      dataInput.value = agora.toLocaleDateString("pt-BR");
-      horaInput.value = agora.toLocaleTimeString("pt-BR");
-    }
+      document.getElementById('dataAtual').value = agora.toLocaleDateString("pt-BR");
+      document.getElementById('horaAtual').value = agora.toLocaleTimeString("pt-BR");
 
-    // Captura localização
-    function capturarLocalizacao() {
-      if (navigator.geolocation) {
+      // Captura localização (async)
+      const localizacao = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
+          pos => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            localizacaoInput.value = `https://maps.google.com/?q=${lat},${lon}`;
+            resolve(`https://maps.google.com/?q=${lat},${lon}`);
           },
-          () => {
-            localizacaoInput.value = "Localização não autorizada";
+          err => {
+            resolve("Localização não disponível");
           }
         );
-      } else {
-        localizacaoInput.value = "Geolocalização não suportada";
-      }
+      });
+      document.getElementById('localizacao').value = localizacao;
+
+      // Envia dados
+      const dados = new FormData(form);
+      const resposta = await fetch("https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec", {
+        method: 'POST',
+        body: dados
+      });
+
+      if (!resposta.ok) throw new Error("Erro HTTP");
+
+      alert("Ponto registrado com sucesso!");
+      form.reset();
+    } catch (err) {
+      alert("Erro ao registrar ponto.");
+      console.error("Erro:", err);
     }
+  });
+</script>
 
-    // Inicializa câmera
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
-    });
-
-    // Captura imagem da câmera
-    function tirarFoto() {
-      const context = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      fotoInput.value = canvas.toDataURL('image/jpeg');
-      alert("Foto capturada!");
-    }
-
-    // Envia o formulário
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      atualizarDataHora();
-      capturarLocalizacao();
-
-      setTimeout(() => {
-        const dados = new FormData(form);
-        fetch("https://script.google.com/macros/s/AKfycbxYRN7kYFcaTd093nxVmzphpEw355DrYX9Mduc8we1srlJVw8stOEN_JIGt932XsggG/exec", {
-          method: 'POST',
-          body: dados
-        })
-        .then(response => {
-          alert("Ponto registrado com sucesso!");
-          form.reset();
-        })
-        .catch(error => {
-          alert("Erro ao registrar ponto.");
-          console.error(error);
-        });
-      }, 1000); // Aguarda localização
-    });
-
-    atualizarDataHora();
-    capturarLocalizacao();
-  </script>
 
 </body>
 </html>
