@@ -92,6 +92,7 @@
     <button type="submit">Registrar Ponto</button>
   </form>
 
+  
   <script>
     const form = document.getElementById('pontoForm');
     const video = document.getElementById('video');
@@ -151,6 +152,11 @@
       } catch (err) {
         alert("Erro ao registrar ponto.");
         console.error(err);
+
+        console.log("Enviando dados:");
+for (const pair of new FormData(form).entries()) {
+  console.log(pair[0]+ ': ' + pair[1]);
+}
       }
     });
   </script>
