@@ -86,7 +86,7 @@
     <input type="hidden" name="foto" id="fotoBase64" />
 
     <label>Foto (ativa a câmera automaticamente):</label>
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <button type="button" onclick="tirarFoto()">Capturar Foto (se quiser atualizar)</button>
 
@@ -103,7 +103,6 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
-
         video.onloadedmetadata = () => {
           tirarFoto(); // tira a foto automaticamente assim que a câmera estiver pronta
         };
@@ -124,8 +123,6 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      <video id="video" autoplay playsinline muted></video>
-
 
       // Atualiza data e hora no formulário
       const agora = new Date();
@@ -139,7 +136,6 @@
           () => resolve("Localização não disponível")
         );
       });
-
       document.getElementById('localizacao').value = localizacao;
 
       // Verifica se tem foto
@@ -162,20 +158,11 @@
         alert(texto);
         form.reset();
         fotoInput.value = '';
-        iniciarCamera(); // reinicia a câmera e tira nova foto
+        iniciarCamera(); // reinicia a câmera para nova foto
       } catch (err) {
         alert("Erro ao registrar ponto.");
         console.error(err);
       }
-
-    async function iniciarCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-  } catch (err) {
-    alert("Erro ao acessar a câmera: " + err.message);
-  }
-} 
     });
   </script>
 
